@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore the next 24 hours of estimated solar generation across Canada.">
+  <title>Canada solar forecast · SolarPowerRangers</title>
+  <link rel="stylesheet" href="/assets/forecast.css">
+  <script src="/assets/forecast.js" type="module"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-width header-content">
+      <a class="brand" href="/" aria-label="SolarPowerRangers home">
+        <span class="brand-mark" aria-hidden="true">☀</span>
+        SolarPowerRangers
+      </a>
+      <span class="header-label">Canada</span>
+    </div>
+  </header>
+  <main class="site-width">
+    <section class="intro">
+      <div>
+        <h1>Canada solar forecast</h1>
+        <p>Explore estimated solar generation over the next 24 hours.</p>
+      </div>
+      <button id="highest" class="primary-button" type="button" disabled>Show highest forecast</button>
+    </section>
+    <div class="workspace">
+      <section class="panel map-panel" aria-labelledby="map-title">
+        <header class="panel-heading">
+          <div>
+            <h2 id="map-title">24-hour energy</h2>
+            <p id="map-instructions">Select a grid cell to see its hourly forecast.</p>
+          </div>
+        </header>
+        <div class="map-viewport">
+          <svg id="canada-map" role="group" aria-label="Canadian solar forecast grid" aria-describedby="map-instructions">
+            <g id="map-outline" aria-hidden="true"></g>
+            <g id="map-cells"></g>
+            <g id="map-provinces" aria-hidden="true"></g>
+            <g id="map-cities" aria-hidden="true"></g>
+            <g id="map-selection" aria-hidden="true"></g>
+          </svg>
+          <div id="map-loading" class="map-loading" role="status">Loading Canada forecast…</div>
+        </div>
+        <div class="map-key">
+          <div id="legend" class="legend" aria-label="Map legend" role="group" hidden>
+            <span class="legend-item"><i class="legend-zero" aria-hidden="true"></i>0 kWh</span>
+            <span class="legend-item" id="legend-energy" hidden>
+              <span class="legend-colors" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+              <span id="legend-max"></span>
+            </span>
+            <span class="legend-item" id="legend-missing" hidden><i class="legend-no-data" aria-hidden="true"></i>No forecast</span>
+          </div>
+          <span id="coverage"></span>
+        </div>
+      </section>
+      <section class="panel detail-panel" aria-labelledby="location-name">
+        <div class="panel-heading">
+          <div>
+            <p class="detail-label">Selected grid cell</p>
+            <h2 id="location-name">Canada</h2>
+            <p id="coordinates"></p>
+          </div>
+          <span class="top-label" id="top-label" hidden>Highest forecast</span>
+        </div>
+        <p id="detail-status" class="detail-status" role="status">Fetching weather for the grid…</p>
+        <button id="retry" class="secondary-button" type="button" hidden>Try again</button>
+        <div id="site-forecast" hidden>
+          <dl class="metrics">
+            <div>
+              <dt>Estimated energy</dt>
+              <dd><span id="total"></span> <span class="unit">kWh</span></dd>
+              <span class="metric-context" id="window-label"></span>
+            </div>
+            <div>
+              <dt>Peak power</dt>
+              <dd><span id="peak"></span> <span class="unit">kW</span></dd>
+              <span id="peak-time" class="metric-context"></span>
+            </div>
+          </dl>
+          <p class="model-note" id="model-note" hidden>Some daylight temperatures fall outside the model’s training range.</p>
+          <div class="chart-heading">
+            <h3>Hourly power</h3>
+            <span>Local time</span>
+          </div>
+          <svg id="power-chart" viewBox="0 0 360 174" role="img" aria-label="Hourly solar power forecast in kilowatts"></svg>
+          <details class="hourly-table">
+            <summary>View hourly values</summary>
+            <table>
+              <thead><tr><th scope="col">Hour ending</th><th scope="col">Power (kW)</th></tr></thead>
+              <tbody id="hourly-rows"></tbody>
+            </table>
+          </details>
+        </div>
+      </section>
+    </div>
+    <footer class="page-footer">
+      <span>Estimates apply to the model’s reference system.</span>
+      <span id="updated"></span>
+      <span>Weather <a href="https://open-meteo.com/">Open-Meteo</a> · Map <a href="https://www.naturalearthdata.com/">Natural Earth</a></span>
+    </footer>
+  </main>
+</body>
+</html>

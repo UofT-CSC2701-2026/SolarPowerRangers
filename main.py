@@ -4,19 +4,25 @@ import os
 import tempfile
 from contextlib import asynccontextmanager
 from datetime import date
+from pathlib import Path
 from typing import List
 
 import numpy as np
 import pandas as pd
 import xgboost as xgb
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from google.cloud import storage
 from pydantic import BaseModel, Field, model_validator
+
+from hourly_forecast import ForecastUnavailable, get_grid_forecast, load_hourly_model
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger("solar-api")
 
-GCS_BUCKET = os.environ["GCS_BUCKET"]
+GCS_BUCKET = os.getenv("GCS_BUCKET")
+WEB_DIRECTORY = Path(__file__).resolve().parent / "web"
 MODEL_BLOB = os.getenv(
     "MODEL_BLOB",
     "models/solar_xgboost/solar_xgboost_model.json"
@@ -90,7 +96,10 @@ def load_model_from_gcs():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    load_model_from_gcs()
+    if GCS_BUCKET:
+        load_model_from_gcs()
+    else:
+        load_hourly_model()
     yield
     state["model"] = None
 
@@ -104,6 +113,20 @@ app = FastAPI(
     ),
     lifespan=lifespan,
 )
+app.mount("/assets", StaticFiles(directory=WEB_DIRECTORY), name="forecast-assets")
+
+
+@app.get("/", include_in_schema=False)
+def forecast_page():
+    return FileResponse(WEB_DIRECTORY / "index.html")
+
+
+@app.get("/forecast/canada")
+def canada_forecast():
+    try:
+        return get_grid_forecast()
+    except ForecastUnavailable as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 class HourlyForecast(BaseModel):
@@ -174,7 +197,7 @@ def build_daily_features(request: DailyPredictionRequest) -> pd.DataFrame:
 
 @app.get("/health")
 def health():
-    if state["model"] is None:
+    if GCS_BUCKET and state["model"] is None:
         raise HTTPException(status_code=503, detail="Model is not loaded")
     return {"status": "healthy", "model_loaded": True}
 
