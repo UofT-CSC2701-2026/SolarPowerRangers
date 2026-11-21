@@ -2,6 +2,23 @@
 
 [Kaggle Dataset](https://www.kaggle.com/datasets/juanschafle/solarplant-power-generation-monitoring-2023-2025)
 
+## Canada solar forecast UI
+
+Run the FastAPI app locally with Python 3.11 or 3.12. On macOS, install the XGBoost OpenMP runtime with `brew install libomp` if it is missing.
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --port 8080
+```
+
+Open [localhost:8080](http://localhost:8080/). The map uses live Open-Meteo weather and the checked-in hourly model. Select a cell to see its 24 hourly predictions, estimated energy, and local peak time. The ranking uses the same 24 complete hours for every cell. The UI can run without a GCS bucket. Set `GCS_BUCKET` to enable the daily prediction API described below.
+
+The map uses 300 km cells projected in Statistics Canada's Lambert projection, with one sampled land point per cell. Prince Edward Island has its own smaller cell. The legend shows zero energy separately from unavailable weather data. Map geometry comes from the public-domain [Natural Earth 1:50m data](https://www.naturalearthdata.com/downloads/50m-cultural-vectors/). To regenerate the checked-in grid, install `shapely>=2.1`, `pyproj`, and `timezonefinder`, then run `python scripts/build_canada_grid.py <admin-0-countries.geojson> <admin-1-states-provinces.geojson>`.
+
+The hourly model estimates output for the reference system in its training data. Canada-wide forecast accuracy has yet to be validated. The total treats each hourly kW prediction as an average over its one-hour interval.
+
 # Solar Daily Energy Prediction API
 
 FastAPI service for daily solar energy prediction using the XGBoost model stored in GCS.
