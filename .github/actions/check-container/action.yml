@@ -1,0 +1,17 @@
+name: Check dashboard container
+description: Build the runtime image and test the app and bundled model with fixture weather
+inputs:
+  image:
+    description: Docker image tag for the built container
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Build and test
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.image }}
+      run: |
+        node --check web/forecast.js
+        docker build --tag "$IMAGE" .
+        docker run --rm --interactive --network none "$IMAGE" python - < scripts/smoke_forecast.py

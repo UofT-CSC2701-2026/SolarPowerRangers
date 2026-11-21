@@ -1,0 +1,57 @@
+name: Dashboard CI/CD
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dashboard-${{ github.ref }}
+  queue: max
+
+jobs:
+  check:
+    name: Build and smoke-test the dashboard
+    if: github.repository_id != '1398840217' || github.event_name != 'push' || github.ref != 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/check-container
+        with:
+          image: solarpowerrangers:ci
+
+  deploy:
+    name: Verify and deploy the dashboard
+    if: github.repository_id == '1398840217' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      GCP_PROJECT: solar-power-rangers-01
+      CLOUD_RUN_REGION: europe-west1
+      CLOUD_RUN_SERVICE: solarpowerrangers-ui
+      RUNTIME_ACCOUNT: solarpowerrangers-web@solar-power-rangers-01.iam.gserviceaccount.com
+      IMAGE: europe-west1-docker.pkg.dev/solar-power-rangers-01/solarpowerrangers-ui/dashboard:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/check-container
+        with:
+          image: ${{ env.IMAGE }}
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+      - name: Push image and deploy a verified revision
+        run: bash scripts/deploy_cloud_run.sh

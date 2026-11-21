@@ -19,6 +19,14 @@ The map uses 300 km cells projected in Statistics Canada's Lambert projection, w
 
 The hourly model estimates output for the reference system in its training data. Canada-wide forecast accuracy has yet to be validated. The total treats each hourly kW prediction as an average over its one-hour interval.
 
+### Dashboard CI/CD
+
+GitHub Actions runs the Docker build and forecast smoke test for branch pushes and pull requests into `main`. Each push to `main` builds the frontend, FastAPI app, and repository's hourly model into one image. The workflow pushes the tested image to Artifact Registry and creates a candidate revision of `solarpowerrangers-ui` in `europe-west1`. It checks that revision with live weather before routing public traffic to it.
+
+The deploy job uses Google Cloud Workload Identity Federation. GitHub repository variables `GCP_WORKLOAD_IDENTITY_PROVIDER` and `GCP_DEPLOY_SERVICE_ACCOUNT` identify the provider and deployer. The provider accepts pushes to `main` from this repository's `.github/workflows/ci-cd.yml` only. The deployer can write to the dashboard's Artifact Registry repository and update its Cloud Run service using the dedicated `solarpowerrangers-web` runtime account.
+
+The existing daily API below loads a separate Cloud Storage model. Updating that object is independent of the dashboard deployment.
+
 # Solar Daily Energy Prediction API
 
 FastAPI service for daily solar energy prediction using the XGBoost model stored in GCS.
